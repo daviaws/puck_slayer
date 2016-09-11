@@ -8,6 +8,7 @@ function random_number(max, min) {
 
 //check if x is between min and max
 function between(x, min, max) {
+	// console.log(x + ' is between ' + min + ' and ' + max);
 	return x >= min && x <= max;
 }
 
@@ -24,7 +25,7 @@ function Arena(origin, limit) {
 //pass is an integer movement factor
 //origin and limit are Coordinate instances
 function Puck(game, id, pass, origin, limit) {
-	var game = game;
+	this.game = game;
 	var id = id;
 	var pass = pass;
 	var area = new Area(origin, limit);
@@ -59,8 +60,6 @@ function Puck(game, id, pass, origin, limit) {
 		}else{
 			this.allocate_random();
 		}
-
-		this.allocate_random();
 	};
 	var calculate_pass = function() {
 		x = random_number(pass, -pass);
@@ -74,9 +73,23 @@ function Puck(game, id, pass, origin, limit) {
 		this.allocate_in(new_position);
 	};
 	this.dye = function() {
-		window.clearTimeout(puckMove);
+		if (puckMove != undefined){
+			window.clearTimeout(puckMove);
+		}
+		if (puckDye != undefined){
+			window.clearTimeout(puckDye);	
+		}
+		this.game.remove_puck(id);
 		console.log('Puck ' + id + ' is exploding in your face');
 	};
+	//shoot is an Coordinate instance
+	this.was_hitted = function(shoot){
+		x_match = between(shoot.x, position.x, position.x + area.width);
+		y_match = between(shoot.y, position.y, position.y + area.height);
+		if (y_match && x_match)
+			return true
+		return false
+	}
 	//interval is an integer representing miliseconds
 	this.start_moving = function(interval) {
 		puckMove = window.setInterval(this.move.bind(this), interval);
@@ -143,33 +156,54 @@ function Game() {
 
 		var position = new Coordinate(100, 100)
 
-		create_puck(puck_origin, puck_limit, arena, position);
+		this.create_puck(puck_origin, puck_limit, arena, position);
+		this.to_shoot(100, 100);
 		next_appearance = random_number(3000, 100);
-		window.setTimeout(create_puck.bind(this, puck_origin, puck_limit, arena), next_appearance);
+		window.setTimeout(this.create_puck.bind(this, puck_origin, puck_limit, arena), next_appearance);
+
 	};
 
 	//puck_origin and puck_limit are Coordinates instances
 	//arena is an Arena instance
 	//defined_position must be and Coordinate instance within the Arena boundries
-	var create_puck = function(puck_origin, puck_limit, arena, defined_position) {
+	this.create_puck = function(puck_origin, puck_limit, arena, defined_position) {
 		next_appearance = random_number(2000, 100);
 		last_id += 1;
 		movementInterval = random_number(1000, 100);;
 		pass = 2;
-		timeToDie = random_number(20000, 10);
-
+		timeToDie = random_number(2000, 10);
 		var aPuck = new Puck(this, last_id, pass, puck_origin, puck_limit);
-		aPuck.allocate_initial_position(arena);
+		aPuck.allocate_initial_position(arena, defined_position);
 		aPuck.start_moving(movementInterval);
 		aPuck.schedule_dye(timeToDie);
 
 		pucks[last_id] = aPuck;
-		window.setTimeout(create_puck.bind(this, puck_origin, puck_limit, arena), next_appearance);
+		if (defined_position == undefined)
+			window.setTimeout(this.create_puck.bind(this, puck_origin, puck_limit, arena), next_appearance);
 	};
 
 	this.remove_puck = function(id) {
 		delete pucks[id];
 	};
+
+	this.check_pucks_for_hit = function(shoot){
+		for(var index in pucks) { 
+    		if (pucks[index].was_hitted(shoot))
+    			return pucks[index];
+		}
+		return false;
+	}
+
+	this.to_shoot = function(x, y){
+		shoot = new Coordinate(x, y);
+		dead_puck = this.check_pucks_for_hit(shoot);
+		if (dead_puck){
+			console.log('The bitch was shooted and the bitch was dead!!!');
+			dead_puck.dye();
+			return
+		}
+		console.log('Maybe you need glasses.');
+	}
 }
 
 function main() {
