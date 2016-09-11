@@ -55,9 +55,9 @@ function Puck(game, id, pass, origin, limit) {
 	//arena is an Arena instance
 	this.allocate_initial_position = function(arena, position) {
 		this.define_boundries(arena);
-		if (position != undefined){
+		if (position != undefined) {
 			this.allocate_in(position);
-		}else{
+		} else {
 			this.allocate_random();
 		}
 	};
@@ -73,24 +73,24 @@ function Puck(game, id, pass, origin, limit) {
 		this.allocate_in(new_position);
 	};
 	this.dye = function() {
-		if (puckMove != undefined){
+		if (puckMove != undefined) {
 			window.clearTimeout(puckMove);
 		}
-		if (puckDye != undefined){
-			window.clearTimeout(puckDye);	
+		if (puckDye != undefined) {
+			window.clearTimeout(puckDye);
 		}
 		this.game.remove_puck(id);
 		console.log('Puck ' + id + ' is exploding in your face');
 	};
 	//shoot is an Coordinate instance
-	this.was_hitted = function(shoot){
-		x_match = between(shoot.x, position.x, position.x + area.width);
-		y_match = between(shoot.y, position.y, position.y + area.height);
-		if (y_match && x_match)
-			return true
-		return false
-	}
-	//interval is an integer representing miliseconds
+	this.was_hitted = function(shoot) {
+			x_match = between(shoot.x, position.x, position.x + area.width);
+			y_match = between(shoot.y, position.y, position.y + area.height);
+			if (y_match && x_match)
+				return true
+			return false
+		}
+		//interval is an integer representing miliseconds
 	this.start_moving = function(interval) {
 		puckMove = window.setInterval(this.move.bind(this), interval);
 	};
@@ -186,18 +186,18 @@ function Game() {
 		delete pucks[id];
 	};
 
-	this.check_pucks_for_hit = function(shoot){
-		for(var index in pucks) { 
-    		if (pucks[index].was_hitted(shoot))
-    			return pucks[index];
+	this.check_pucks_for_hit = function(shoot) {
+		for (var index in pucks) {
+			if (pucks[index].was_hitted(shoot))
+				return pucks[index];
 		}
 		return false;
 	}
 
-	this.to_shoot = function(x, y){
+	this.to_shoot = function(x, y) {
 		shoot = new Coordinate(x, y);
 		dead_puck = this.check_pucks_for_hit(shoot);
-		if (dead_puck){
+		if (dead_puck) {
 			console.log('The bitch was shooted and the bitch is dead!!!');
 			dead_puck.dye();
 			return
