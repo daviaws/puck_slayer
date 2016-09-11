@@ -198,7 +198,7 @@ function Game() {
 		shoot = new Coordinate(x, y);
 		dead_puck = this.check_pucks_for_hit(shoot);
 		if (dead_puck){
-			console.log('The bitch was shooted and the bitch was dead!!!');
+			console.log('The bitch was shooted and the bitch is dead!!!');
 			dead_puck.dye();
 			return
 		}
