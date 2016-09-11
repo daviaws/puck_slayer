@@ -33,14 +33,34 @@ function Puck(game, id, pass, origin, limit) {
 	var puckMove = undefined;
 	var puckDye = undefined;
 	//arena is an Arena instance
-	var allocate_initial_position = function() {
-		position = limitArea.generate_random_coordinate();
+	this.define_boundries = function(arena) {
+		limitArea = arena.calculate_body_limit(area);
+	};
+	//coordinate is a Coordinate instance
+	this.allocate_in = function(coordinate) {
+		if (limitArea.have_coordinate(coordinate)) {
+			position = coordinate
+			console.log('Puck ' + id + ' was allocated to position' + '(' + position.x + ' ' + position.y + ')');
+			return
+		}
+		console.log('Puck ' + id + ' tried be allocated to position' + '(' + new_position.x +
+			' ' + new_position.y + ')');
+	};
+	//allocate within boundries
+	this.allocate_random = function() {
+		coordinate = limitArea.generate_random_coordinate();
+		this.allocate_in(coordinate);
 	};
 	//arena is an Arena instance
-	this.allocate_in = function(arena) {
-		limitArea = arena.calculate_body_limit(area);
-		allocate_initial_position();
-		console.log('Puck ' + id + ' was allocated to position' + '(' + position.x + ' ' + position.y + ')');
+	this.allocate_initial_position = function(arena, position) {
+		this.define_boundries(arena);
+		if (position != undefined){
+			this.allocate_in(position);
+		}else{
+			this.allocate_random();
+		}
+
+		this.allocate_random();
 	};
 	var calculate_pass = function() {
 		x = random_number(pass, -pass);
@@ -51,26 +71,20 @@ function Puck(game, id, pass, origin, limit) {
 		console.log('The arena origin width is from ' + '(' + limitArea.origin.x + ' to ' + limitArea.limit.x + ')' + ' and its height if from ' + limitArea.origin.y + ' to ' + limitArea.limit.y);
 		new_pass = calculate_pass();
 		new_position = position.sum(new_pass);
-		if (limitArea.have_coordinate(new_position)){
-			position = new_position;
-			console.log('Puck ' + id + ' moved to position' + '(' + position.x + ' ' + position.y + ')');
-			return
-		}
-		console.log('Puck ' + id + ' tried to move to position' + '(' + new_position.x +
-			' ' + new_position.y + ')');
+		this.allocate_in(new_position);
 	};
 	this.dye = function() {
-			window.clearTimeout(puckMove);
-			console.log('Puck ' + id + ' is exploding in your face');
-		}
+		window.clearTimeout(puckMove);
+		console.log('Puck ' + id + ' is exploding in your face');
+	};
 	//interval is an integer representing miliseconds
 	this.start_moving = function(interval) {
-			puckMove = window.setInterval(this.move, interval);
-		}
+		puckMove = window.setInterval(this.move.bind(this), interval);
+	};
 	//timeout is an integer representing miliseconds
 	this.schedule_dye = function(timeout) {
-		puckDye = window.setTimeout(this.dye, timeout);
-	}
+		puckDye = window.setTimeout(this.dye.bind(this), timeout);
+	};
 }
 
 //origin and limit are Coordinate instances
@@ -127,11 +141,17 @@ function Game() {
 		var puck_origin = new Coordinate(0, 0);
 		var puck_limit = new Coordinate(50, 50);
 
+		var position = new Coordinate(100, 100)
+
+		create_puck(puck_origin, puck_limit, arena, position);
 		next_appearance = random_number(3000, 100);
 		window.setTimeout(create_puck.bind(this, puck_origin, puck_limit, arena), next_appearance);
 	};
 
-	var create_puck = function(puck_origin, puck_limit, arena) {
+	//puck_origin and puck_limit are Coordinates instances
+	//arena is an Arena instance
+	//defined_position must be and Coordinate instance within the Arena boundries
+	var create_puck = function(puck_origin, puck_limit, arena, defined_position) {
 		next_appearance = random_number(2000, 100);
 		last_id += 1;
 		movementInterval = random_number(1000, 100);;
@@ -139,10 +159,10 @@ function Game() {
 		timeToDie = random_number(20000, 10);
 
 		var aPuck = new Puck(this, last_id, pass, puck_origin, puck_limit);
-		aPuck.allocate_in(arena);
+		aPuck.allocate_initial_position(arena);
 		aPuck.start_moving(movementInterval);
 		aPuck.schedule_dye(timeToDie);
-		
+
 		pucks[last_id] = aPuck;
 		window.setTimeout(create_puck.bind(this, puck_origin, puck_limit, arena), next_appearance);
 	};
