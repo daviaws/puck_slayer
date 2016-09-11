@@ -1,5 +1,8 @@
 //returns a number between min and max interval - can be negative numbers
-function random_number(min, max) {
+//if min is not passed, it will be 0
+function random_number(max, min) {
+	if (min == undefined)
+		min = 0;
 	return Math.floor(Math.random() * (max - min + 1)) + min;
 }
 
@@ -20,13 +23,15 @@ function Arena(origin, limit) {
 //lifeTime is the time limit to puck explode
 //pass is an integer movement factor
 //origin and limit are Coordinate instances
-function Puck(lifeTime, pass, origin, limit) {
-	var lifeTime = lifeTime;
+function Puck(game, id, pass, origin, limit) {
+	var game = game;
+	var id = id;
 	var pass = pass;
 	var area = new Area(origin, limit);
 	var limitArea = undefined;
 	var position = undefined;
-	var puck_move = undefined;
+	var puckMove = undefined;
+	var puckDye = undefined;
 	//arena is an Arena instance
 	var allocate_initial_position = function() {
 		position = limitArea.generate_random_coordinate();
@@ -35,29 +40,36 @@ function Puck(lifeTime, pass, origin, limit) {
 	this.allocate_in = function(arena) {
 		limitArea = arena.calculate_body_limit(area);
 		allocate_initial_position();
-		console.log('Puck was allocated to position' + '(' + position.x + ' ' + position.y + ')');
+		console.log('Puck ' + id + ' was allocated to position' + '(' + position.x + ' ' + position.y + ')');
 	};
 	var calculate_pass = function() {
-		x = random_number(-pass, pass);
-		y = random_number(-pass, pass);
+		x = random_number(pass, -pass);
+		y = random_number(pass, -pass);
 		return new Coordinate(x, y);
 	};
 	this.move = function() {
-		valid_pass = false;
-		new_position = undefined;
 		console.log('The arena origin width is from ' + '(' + limitArea.origin.x + ' to ' + limitArea.limit.x + ')' + ' and its height if from ' + limitArea.origin.y + ' to ' + limitArea.limit.y);
-		while (!valid_pass) {
-			new_pass = calculate_pass();
-			new_position = position.sum(new_pass);
-			valid_pass = limitArea.have_coordinate(new_position);
-			console.log('Puck tried to move to position' + '(' + new_position.x +
-				' ' + new_position.y + ')');
+		new_pass = calculate_pass();
+		new_position = position.sum(new_pass);
+		if (limitArea.have_coordinate(new_position)){
+			position = new_position;
+			console.log('Puck ' + id + ' moved to position' + '(' + position.x + ' ' + position.y + ')');
+			return
 		}
-		position = new_position;
-		console.log('Puck moved to position' + '(' + position.x + ' ' + position.y + ')');
+		console.log('Puck ' + id + ' tried to move to position' + '(' + new_position.x +
+			' ' + new_position.y + ')');
 	};
-	this.start_moving = function(){
-		puck_move = window.setInterval(this.move, 1000);
+	this.dye = function() {
+			window.clearTimeout(puckMove);
+			console.log('Puck ' + id + ' is exploding in your face');
+		}
+	//interval is an integer representing miliseconds
+	this.start_moving = function(interval) {
+			puckMove = window.setInterval(this.move, interval);
+		}
+	//timeout is an integer representing miliseconds
+	this.schedule_dye = function(timeout) {
+		puckDye = window.setTimeout(this.dye, timeout);
 	}
 }
 
@@ -76,8 +88,8 @@ function Area(origin, limit) {
 	};
 	//generate random coordiante whitin then borders
 	this.generate_random_coordinate = function() {
-		x = random_number(origin.x, limit.x);
-		y = random_number(origin.y, limit.y);
+		x = random_number(limit.x, origin.x);
+		y = random_number(limit.y, origin.y);
 		return new Coordinate(x, y);
 	};
 	//coordinate is a Coordinate instance
@@ -102,16 +114,47 @@ function Coordinate(x, y) {
 	};
 }
 
+function Game() {
+
+	var pucks = {};
+	var last_id = 0;
+
+	this.start = function() {
+		var arena_origin = new Coordinate(0, 0);
+		var arena_limit = new Coordinate(500, 500);
+		var arena = new Arena(arena_origin, arena_limit);
+
+		var puck_origin = new Coordinate(0, 0);
+		var puck_limit = new Coordinate(50, 50);
+
+		next_appearance = random_number(3000, 100);
+		window.setTimeout(create_puck.bind(this, puck_origin, puck_limit, arena), next_appearance);
+	};
+
+	var create_puck = function(puck_origin, puck_limit, arena) {
+		next_appearance = random_number(2000, 100);
+		last_id += 1;
+		movementInterval = random_number(1000, 100);;
+		pass = 2;
+		timeToDie = random_number(20000, 10);
+
+		var aPuck = new Puck(this, last_id, pass, puck_origin, puck_limit);
+		aPuck.allocate_in(arena);
+		aPuck.start_moving(movementInterval);
+		aPuck.schedule_dye(timeToDie);
+		
+		pucks[last_id] = aPuck;
+		window.setTimeout(create_puck.bind(this, puck_origin, puck_limit, arena), next_appearance);
+	};
+
+	this.remove_puck = function(id) {
+		delete pucks[id];
+	};
+}
+
 function main() {
 	var welcomeMessage = document.getElementById("WelcomeMessage");
 	welcomeMessage.innerHTML = "Hellcome to Puck";
-	var arena_origin = new Coordinate(0, 0);
-	var arena_limit = new Coordinate(500, 500);
-	var arena = new Arena(arena_origin, arena_limit);
-
-	var puck_origin = new Coordinate(0,0);
-	var puck_limit = new Coordinate(50, 50);
-	var puckTheFirst = new Puck(undefined, 2, puck_origin, puck_limit);
-	puckTheFirst.allocate_in(arena);
-	puckTheFirst.start_moving();
+	game = new Game();
+	game.start();
 }
